@@ -1,11 +1,11 @@
 import express from 'express';
-import { createProductController, getProducts } from '../controllers/productController';
-import { authenticateAdmin } from '../middleware/authMiddleware';
+import productController from "../controllers/productController";
 import { validateProductQuery } from '../middleware/validateProductQuery';
 
 const router = express.Router();
 
-router.post('/products', authenticateAdmin, createProductController);
-router.get('/products', validateProductQuery, getProducts);
-
+router.post('/products', validateProductQuery, productController.getProducts);
+router.get('/products', productController.getAllProducts);
+router.get('/product/:id', productController.getProductById);
+router.get('/:id', productController.getProduct);
 export default router;

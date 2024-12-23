@@ -1,48 +1,113 @@
-import { MESSAGES } from '../messages'
-import { createProduct, getProductsByCategoryAndFilters } from '../services/productService';
+import { Request, Response } from 'express';
+import productService from '../services/productService';
 
-export const createProductController = async (req, res) => {
-  try {
-    const productData = req.body;
+class ProductController {
+  async getProducts(req: Request, res: Response) {
+    try {
+      const {
+        categoryId,
+        subCategoryId,
+        subSubCategoryId,
+        sorting,
+        filters,
+      }: {
+        categoryId?: number;
+        subCategoryId?: number;
+        subSubCategoryId?: number;
+        sorting?: { field: string; order: "asc" | "desc" };
+        filters?: {
+          filterOptionId: number;
+          type: "slider" | "checkbox" | "dropdown";
+          values: number[] | { min: number; max: number };
+        }[];
+      } = req.body;
 
-    if (!productData.name || !productData.price) {
-      return res.status(400).json({ message: MESSAGES.PRODUCT.PRODUCT_NAME_PRICE_REQUIRED });
+      if (!categoryId && !subCategoryId && !subSubCategoryId) {
+        return res.status(400).json({
+          error: "At least one of categoryId, subCategoryId, or subSubCategoryId must be provided.",
+        });
+      }
+      
+
+      if (filters) {
+        for (const filter of filters) {
+          if (
+            !filter.filterOptionId ||
+            !filter.type ||
+            !filter.values ||
+            (filter.type === 'slider' &&
+              (typeof (filter.values as { min: number; max: number }).min !== 'number' ||
+               typeof (filter.values as { min: number; max: number }).max !== 'number'))
+          ) {
+            return res.status(400).json({
+              error: "Invalid filter structure.",
+            });
+          }
+
+          if (
+            (filter.type === 'checkbox' || filter.type === 'dropdown') &&
+            !Array.isArray(filter.values)
+          ) {
+            return res.status(400).json({
+              error: `Filter values for type ${filter.type} must be an array of numbers.`,
+            });
+          }
+        }
+      }
+
+      const products = await productService.getProductsByCategoryAndFilters({
+        categoryId,
+        subCategoryId,
+        subSubCategoryId,
+        sorting,
+        filters,
+      });
+
+      return res.status(200).json(products);
+    } catch (error: any) {
+      console.error("Error fetching products:", error);
+      return res.status(500).json({ error: "Failed to fetch products." });
     }
-
-    const product = await createProduct(productData);
-
-    res.status(201).json({
-      success: true,
-      message: MESSAGES.PRODUCT.PRODUCT_CREATED,
-      product,
-    });
-    
-  } catch (error) {
-    console.error(MESSAGES.PRODUCT.ERROR_CREATING_PRODUCT, error);
-    res.status(500).json({ success: false, message: MESSAGES.PRODUCT.INTERNAL_ERROR });
   }
-};
 
+  async getProductById(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const productId = parseInt(id, 10);
+      if (isNaN(productId)) {
+        return res.status(400).json({ error: 'Invalid product ID.' });
+      }
 
+      const product = await productService.getProductById(productId);
 
-export const getProducts = async (req: Request, res: Response) => {
-  const { mainCategoryId, subCategoryId, subSubCategoryId, filterValueId, rangeField, minRange, maxRange, sortBy, sortOrder } = req.query;
+      if (!product) {
+        return res.status(404).json({ error: 'Product not found.' });
+      }
 
-  try {
-    const products = await getProductsByCategoryAndFilters({
-      mainCategoryId: mainCategoryId ? Number(mainCategoryId) : undefined,
-      subCategoryId: subCategoryId ? Number(subCategoryId) : undefined,
-      subSubCategoryId: subSubCategoryId ? Number(subSubCategoryId) : undefined,
-      filterValueId: filterValueId ? Number(filterValueId) : undefined,
-      rangeField: rangeField ? String(rangeField) : undefined,
-      minRange: minRange ? Number(minRange) : undefined,
-      maxRange: maxRange ? Number(maxRange) : undefined,
-      sortBy: sortBy as 'mostSold' | 'reviews' | 'name' | 'discount' | 'price',
-      sortOrder: sortOrder as 'asc' | 'desc'
-    });
-
-    res.status(200).json(products);
-  } catch (error) {
-    res.status(500).json({ error: 'An error occurred while fetching products.' });
+      return res.status(200).json(product);
+    } catch (error: any) {
+      console.error('Error fetching product by ID:', error);
+      return res.status(500).json({ error: 'Failed to fetch product.' });
+    }
   }
-};
+
+  async getAllProducts(req: Request, res: Response) {
+    try {
+      const products = await productService.getProducts();
+      return res.status(200).json(products);
+    } catch (error: any) {
+      console.error('Error fetching products:', error);
+      return res.status(500).json({ error: 'Failed to fetch products.' });
+    }
+  }
+
+  async getProduct(req: Request, res: Response) {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'Invalid ID' });
+    const product = await productService.getProductByIdForOrder(id);
+    if (!product) return res.status(404).json({ error: 'Not Found' });
+    return res.json(product);
+  }
+}
+
+export default new ProductController();
