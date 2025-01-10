@@ -14,7 +14,6 @@ export const categoryService = {
     console.log('Creating category with data:', data);
     const { id, name, type } = data;
 
-    // Determine the parentId based on the category type
     let parentId: number | undefined;
 
     if (type === 'subCategory') {
@@ -29,7 +28,6 @@ export const categoryService = {
         break;
       case 'subCategory':
         if (!parentId) throw new Error('Parent ID (mainCategoryId) is required for subCategory');
-        // Verify parent exists
         const mainCategory = await prisma.mainCategory.findUnique({ where: { id: parentId } });
         if (!mainCategory) throw new Error(`MainCategory with id ${parentId} does not exist`);
         await prisma.subCategory.create({
@@ -42,7 +40,6 @@ export const categoryService = {
         break;
       case 'subSubCategory':
         if (!parentId) throw new Error('Parent ID (subCategoryId) is required for subSubCategory');
-        // Verify parent exists
         const subCategory = await prisma.subCategory.findUnique({ where: { id: parentId } });
         if (!subCategory) throw new Error(`SubCategory with id ${parentId} does not exist`);
         await prisma.subSubCategory.create({
@@ -62,7 +59,6 @@ export const categoryService = {
     console.log('Updating category with data:', data);
     const { id, name, type } = data;
 
-    // Determine the parentId based on the category type
     let parentId: number | undefined;
 
     if (type === 'subCategory') {
@@ -101,9 +97,7 @@ export const categoryService = {
     }
   },
 
-  async deleteCategory(data: CategoryData, relatedData: any) {
-    console.log('Deleting category with data:', data, 'and related data:', relatedData);
-    const { id, type } = data;
+  async deleteCategory(id: number, type: string) {
 
     switch (type) {
       case 'mainCategory':
@@ -113,15 +107,18 @@ export const categoryService = {
             include: { subSubCategories: true },
           });
 
+
           const subCategoryIds = subCategories.map((sc) => sc.id);
           const subSubCategoryIds = subCategories.flatMap((sc) =>
             sc.subSubCategories.map((ssc) => ssc.id)
           );
 
+
           await prisma.product.updateMany({
             where: { subSubCategoryId: { in: subSubCategoryIds } },
             data: { subSubCategoryId: null },
           });
+
 
           await prisma.subSubCategory.deleteMany({
             where: { subCategoryId: { in: subCategoryIds } },
@@ -131,7 +128,11 @@ export const categoryService = {
             where: { mainCategoryId: id },
           });
 
-          await prisma.mainCategory.delete({ where: { id } });
+          await prisma.mainCategory.delete({
+            where: { id: id },
+          });
+
+
         });
         break;
 

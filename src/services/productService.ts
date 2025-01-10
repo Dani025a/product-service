@@ -484,15 +484,15 @@ class ProductService {
     }
   
     for (const item of products) {
-      const product = item.product; // Access the product object
+      const product = item.product;
       await prisma.product.update({
         where: { id: product.id },
         data: { stock: { decrement: product.quantity } },
       });
     }
   
-    // Publish stock updated
     await Publisher.productStockUpdated(replyTo, correlationId, orderId);
+    await publishStockUpdated(data)
   
     console.log('Product validation successful. Stock updated.');
   }
@@ -532,7 +532,6 @@ class ProductService {
       });
     }
 
-    await Publisher.reservationCancelled(order);
     console.log(`Stock incremented for cancelled orderId: ${orderId}`);
   }
 }

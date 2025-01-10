@@ -1,11 +1,12 @@
 import { Order } from '../types/types';
-import RabbitMQ from './connection';
+import { rabbitMQ } from './connection';
 
 class Publisher {
   static async publish(exchange: string, routingKey: string, message: object) {
     try {
-      const channel = await RabbitMQ.connect();
-      channel.publish(exchange, routingKey, Buffer.from(JSON.stringify(message)), { persistent: true });
+      const channel = rabbitMQ.getChannel();
+      await channel.assertExchange(exchange, 'direct', { durable: false });
+      channel.publish(exchange, routingKey, Buffer.from(JSON.stringify(message)));
       console.log(`Message published to ${exchange} with routing key ${routingKey}:`, message);
     } catch (error) {
       console.error(`Failed to publish message to ${exchange} with routing key ${routingKey}:`, error);
@@ -19,7 +20,8 @@ class Publisher {
     message: object
   ) {
     try {
-      const channel = await RabbitMQ.connect();
+      const channel = rabbitMQ.getChannel();
+      await channel.assertQueue(replyTo, { durable: false });
       channel.sendToQueue(replyTo, Buffer.from(JSON.stringify(message)), {
         correlationId,
       });

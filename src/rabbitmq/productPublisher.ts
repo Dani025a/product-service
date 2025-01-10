@@ -1,9 +1,12 @@
-import { getChannel } from './connection';
+import { rabbitMQ } from "./connection";
 
-export const publishStockUpdated = async (message: any) => {
-    const channel = getChannel();
-    const queue = 'stock_updated';
-    await channel.assertQueue(queue, { durable: true });
-    channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)), { persistent: true });
-    console.log('Published stock update:', message);
-  };
+
+export const publishStockUpdated = async (message: any): Promise<void> => {
+  const channel = rabbitMQ.getChannel();
+  const routingKey = "stock.update"
+  await channel.assertExchange('product', 'direct', { durable: false });
+  channel.publish('product', routingKey, Buffer.from(message));
+  console.log(`Message published to exchange stock_update with routingKey ${routingKey}: ${message}`);
+};
+
+

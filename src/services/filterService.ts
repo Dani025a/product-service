@@ -198,7 +198,8 @@ class FilterService {
       }
   static async createFilterValue(data: any) {
     const { id, value, filterOptionId } = data;
-  
+
+    console.log("..................................", data)
     const trimmedValue = value.trim();
     if (!trimmedValue) {
       throw new Error('Filter value cannot be empty');

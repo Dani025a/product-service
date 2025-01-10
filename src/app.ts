@@ -3,13 +3,11 @@ import dotenv from 'dotenv';
 import productRoutes from './routes/productRoute';
 import productViewRoutes from './routes/productViewRoute';
 import cors from 'cors';
-import { connectRabbitMQ } from './rabbitmq/connection';
-import { consumeProductAdds, consumeProductDeletes, consumeProductUpdates } from './rabbitmq/productConsumer';
-import { categoryConsumer } from './rabbitmq/categoryConsumer';
-import { filterConsumer } from './rabbitmq/filterConsumer';
 import categoryRouter from './routes/categoryRouter';
 import filterRouter from './routes/filterRouter';
-import { consumeProductValidation,  consumeCancelReservation} from './rabbitmq/orderConsumer';
+import { rabbitMQ } from './rabbitmq/connection';
+import { AddFilter, UpdateFilter, DeleteFilter, AddFilterValue, UpdatefilterValue, DeletefilterValue, addProductFilter } from './rabbitmq/filterConsumer';
+import { addMainCategory, addSubCategory, addSubSubCategory, deleteMainCategory, deleteSubCategory, deleteSubSubCategory, updateMainCategory, updateSubCategory, updateSubSubCategory } from './rabbitmq/categoryConsumer';
 
 dotenv.config();
 
@@ -24,18 +22,30 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+
 (async () => {
   try {
-    await connectRabbitMQ();
-    await consumeProductAdds();
-    await consumeProductDeletes();
-    await consumeProductUpdates();
-    await categoryConsumer();
-    await filterConsumer();
-    await consumeCancelReservation();
-    await consumeProductValidation();
+    await rabbitMQ.initialize();
+    console.log('RabbitMQ is ready for operations.');
+    await AddFilter();
+    await UpdateFilter();
+    await DeleteFilter();
+    await AddFilterValue();
+    await UpdatefilterValue();
+    await DeletefilterValue();
+    await addProductFilter();
+    await addMainCategory();
+    await updateMainCategory();
+    await deleteMainCategory();
+    await addSubCategory();
+    await updateSubCategory();
+    await deleteSubCategory();
+    await addSubSubCategory();
+    await updateSubSubCategory();
+    await deleteSubSubCategory();
   } catch (error) {
-    console.error('Failed to initialize service:', error);
+    console.error('Failed to initialize RabbitMQ:', error);
+    process.exit(1);
   }
 })();
 
