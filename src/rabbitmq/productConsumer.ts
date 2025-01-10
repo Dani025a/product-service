@@ -6,7 +6,7 @@ export const consumeProductAdds = async (): Promise<void> => {
   const queue = 'product';
   const routingKey = 'product.create';
   const channel = rabbitMQ.getChannel();
-  await channel.assertExchange(EXCHANGE_NAME, 'direct', { durable: false });
+  await channel.assertExchange(EXCHANGE_NAME, 'direct', { durable: true });
   const q = await channel.assertQueue(queue, { exclusive: true });
   await channel.bindQueue(q.queue, EXCHANGE_NAME, routingKey);
   channel.consume(q.queue, async (msg: any) => {
@@ -33,7 +33,7 @@ export const consumeProductUpdates = async (): Promise<void> => {
   const queue = 'product';
   const routingKey = 'product.update';
   const channel = rabbitMQ.getChannel();
-  await channel.assertExchange(EXCHANGE_NAME, 'direct', { durable: false });
+  await channel.assertExchange(EXCHANGE_NAME, 'direct', { durable: true });
   const q = await channel.assertQueue(queue, { exclusive: true });
   await channel.bindQueue(q.queue, EXCHANGE_NAME, routingKey);
   channel.consume(q.queue, async (msg: any) => {
@@ -60,7 +60,7 @@ export const consumeProductDeletes = async (): Promise<void> => {
   const queue = 'product';
   const routingKey = 'product.delete';
   const channel = rabbitMQ.getChannel();
-  await channel.assertExchange(EXCHANGE_NAME, 'direct', { durable: false });
+  await channel.assertExchange(EXCHANGE_NAME, 'direct', { durable: true });
   const q = await channel.assertQueue(queue, { exclusive: true });
   await channel.bindQueue(q.queue, EXCHANGE_NAME, routingKey);
   channel.consume(q.queue, async (msg: any) => {

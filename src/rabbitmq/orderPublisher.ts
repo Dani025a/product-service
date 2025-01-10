@@ -14,38 +14,48 @@ class Publisher {
     }
   }
 
-  static async publishReply(
-    replyTo: string,
-    correlationId: string,
-    message: object
-  ) {
+  static async publishReply(replyTo: string, correlationId: string, message: any) {
     try {
+      await rabbitMQ.initialize();
       const channel = rabbitMQ.getChannel();
-      await channel.assertQueue(replyTo, { durable: false });
-      channel.sendToQueue(replyTo, Buffer.from(JSON.stringify(message)), {
-        correlationId,
-      });
-      console.log(
-        `Published reply to ${replyTo} with correlationId ${correlationId}:`,
-        message
-      );
+  
+      if (replyTo.startsWith('amq.')) {
+        throw new Error(`Invalid replyTo queue name: ${replyTo}`);
+      }
+  
+      const messageBuffer = Buffer.from(JSON.stringify(message));
+  
+      const sent = channel.sendToQueue(replyTo, messageBuffer, { correlationId });
+  
+      if (sent) {
+        console.log(`Reply sent to ${replyTo} with correlationId ${correlationId}`);
+      } else {
+        console.error(`Failed to send reply to ${replyTo}`);
+      }
     } catch (error) {
-      console.error('Failed to publish reply:', error);
-      throw error;
+      console.error('Error publishing reply:', error);
     }
   }
+  
 
   static async productStockUpdated(
     replyTo: string,
     correlationId: string,
     orderId: string
   ) {
+    if (!replyTo || !correlationId) {
+      console.error('Missing replyTo or correlationId:', { replyTo, correlationId });
+      throw new Error('Invalid replyTo or correlationId');
+    }
+  
     const message = {
       type: 'product.stock_updated',
       orderId,
     };
+  
     await this.publishReply(replyTo, correlationId, message);
   }
+  
 
   static async productReservationFailed(
     replyTo: string,

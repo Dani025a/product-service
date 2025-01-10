@@ -423,7 +423,7 @@ class ProductService {
     totalDiscountedPrice: number;
     replyTo: string;
     correlationId: string;
-  }) {
+  }): Promise<{ success: boolean; message: string } | null> {
     const {
       orderId,
       products,
@@ -435,7 +435,6 @@ class ProductService {
   
     let calculatedTotalPrice = 0;
     let calculatedTotalDiscountedPrice = 0;
-
   
     console.log('Validating Product Stock and Price...');
     console.log('Order Data:', data);
@@ -456,7 +455,7 @@ class ProductService {
           orderId,
           `Product ID ${product.id} is out of stock.`
         );
-        return;
+        return { success: false, message: `Product ID ${product.id} is out of stock.` };
       }
   
       const productPrice = dbProduct.price.toNumber();
@@ -480,7 +479,7 @@ class ProductService {
         orderId,
         'Price mismatch.'
       );
-      return;
+      return { success: false, message: 'Price mismatch.' };
     }
   
     for (const item of products) {
@@ -490,12 +489,15 @@ class ProductService {
         data: { stock: { decrement: product.quantity } },
       });
     }
+
+    console.log(replyTo, correlationId)
   
     await Publisher.productStockUpdated(replyTo, correlationId, orderId);
-    await publishStockUpdated(data)
   
     console.log('Product validation successful. Stock updated.');
+    return { success: true, message: 'Product validation successful. Stock updated.' };
   }
+  
   
   public async deleteProduct(id: number) {
     try {

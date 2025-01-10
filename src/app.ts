@@ -8,6 +8,8 @@ import filterRouter from './routes/filterRouter';
 import { rabbitMQ } from './rabbitmq/connection';
 import { AddFilter, UpdateFilter, DeleteFilter, AddFilterValue, UpdatefilterValue, DeletefilterValue, addProductFilter } from './rabbitmq/filterConsumer';
 import { addMainCategory, addSubCategory, addSubSubCategory, deleteMainCategory, deleteSubCategory, deleteSubSubCategory, updateMainCategory, updateSubCategory, updateSubSubCategory } from './rabbitmq/categoryConsumer';
+import { consumeCancelReservation, consumeProductValidation } from './rabbitmq/orderConsumer';
+import { consumeProductAdds, consumeProductDeletes, consumeProductUpdates } from './rabbitmq/productConsumer';
 
 dotenv.config();
 
@@ -43,6 +45,12 @@ app.use(express.json());
     await addSubSubCategory();
     await updateSubSubCategory();
     await deleteSubSubCategory();
+    await consumeCancelReservation();
+    await consumeProductValidation();
+    await consumeProductAdds();
+    await consumeProductUpdates();
+    await consumeProductDeletes();
+
   } catch (error) {
     console.error('Failed to initialize RabbitMQ:', error);
     process.exit(1);
